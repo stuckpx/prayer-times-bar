@@ -32,7 +32,7 @@ A lightweight macOS menubar app that displays a live countdown to the next Islam
 
 ## Screenshot
 
-> Popup panel showing prayer times and live countdown
+![Prayer Times Bar popup showing countdown and daily prayer times](screenshot.png)
 
 ## Requirements
 
