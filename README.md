@@ -14,6 +14,22 @@ A lightweight macOS menubar app that displays a live countdown to the next Islam
 - **Automatic daily refresh** — fetches new prayer times each day
 - Runs as a menubar-only agent (no Dock icon)
 
+## Download
+
+**[Download PrayerTimesBar.zip](https://github.com/stuckpx/prayer-times-bar/releases/latest/download/PrayerTimesBar.zip)** — macOS 13+ required
+
+### Install steps
+
+1. Download `PrayerTimesBar.zip` using the link above
+2. Double-click the zip to extract `PrayerTimesBar.app`
+3. Drag `PrayerTimesBar.app` to your **Applications** folder
+4. Open it — because it's not notarized, macOS will block it on first launch:
+   - Go to **System Settings → Privacy & Security**
+   - Scroll down and click **Open Anyway** next to the PrayerTimesBar warning
+5. The app will appear in your menubar immediately — no Dock icon
+
+**To launch automatically on login:** System Settings → General → Login Items → add `PrayerTimesBar.app`
+
 ## Screenshot
 
 > Popup panel showing prayer times and live countdown
