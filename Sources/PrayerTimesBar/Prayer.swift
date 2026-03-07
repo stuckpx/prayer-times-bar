@@ -24,6 +24,7 @@ struct AladhanResponse: Codable {
 
 struct AladhanData: Codable {
     let timings: AladhanTimings
+    let meta: AladhanMeta
 }
 
 struct AladhanTimings: Codable {
@@ -32,4 +33,8 @@ struct AladhanTimings: Codable {
     let Asr: String
     let Maghrib: String
     let Isha: String
+}
+
+struct AladhanMeta: Codable {
+    let timezone: String
 }

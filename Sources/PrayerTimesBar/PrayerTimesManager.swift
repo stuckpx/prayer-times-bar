@@ -11,14 +11,20 @@ class PrayerTimesManager: ObservableObject {
     @Published var errorMessage: String?
     @Published var lastFetchDate: Date?
 
+    // Timezone returned by the API for the configured city
+    private(set) var cityTimezone: TimeZone = .current
+
     private var fetchTask: Task<Void, Never>?
     private var lastFetchDay: Int?
 
     private init() {}
 
     func fetchPrayerTimesIfNeeded() {
-        let calendar = Calendar.current
-        let today = calendar.component(.day, from: Date())
+        // Check "today" using the city's timezone so a midnight rollover in the
+        // city triggers a refresh even if the system clock is in a different zone
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = cityTimezone
+        let today = cal.component(.day, from: Date())
         if lastFetchDay != today || prayers.isEmpty {
             fetchPrayerTimes()
         }
@@ -70,6 +76,12 @@ class PrayerTimesManager: ObservableObject {
             }
 
             let decoded = try JSONDecoder().decode(AladhanResponse.self, from: data)
+
+            // Use the timezone the API tells us the city is in
+            let tzIdentifier = decoded.data.meta.timezone
+            let tz = TimeZone(identifier: tzIdentifier) ?? .current
+            cityTimezone = tz
+
             let timings = decoded.data.timings
             let prayerData: [(String, String)] = [
                 ("Fajr",    timings.Fajr),
@@ -81,14 +93,16 @@ class PrayerTimesManager: ObservableObject {
 
             var newPrayers: [Prayer] = []
             for (name, timeStr) in prayerData {
-                if let date = parseTime(timeStr) {
+                if let date = parseTime(timeStr, in: tz) {
                     newPrayers.append(Prayer(id: name, name: name, time: date))
                 }
             }
 
             prayers = newPrayers
             lastFetchDate = Date()
-            lastFetchDay = Calendar.current.component(.day, from: Date())
+            var cal = Calendar(identifier: .gregorian)
+            cal.timeZone = tz
+            lastFetchDay = cal.component(.day, from: Date())
             updateNextPrayer()
             isLoading = false
         } catch {
@@ -98,17 +112,21 @@ class PrayerTimesManager: ObservableObject {
         }
     }
 
-    private func parseTime(_ timeStr: String) -> Date? {
-        // API returns "HH:mm" or "HH:mm (TZ)" — strip anything after space
+    // Parse "HH:mm" (or "HH:mm (TZ)") as a time in the given timezone for today
+    private func parseTime(_ timeStr: String, in timezone: TimeZone) -> Date? {
         let clean = timeStr.components(separatedBy: " ").first ?? timeStr
         let parts = clean.split(separator: ":").compactMap { Int($0) }
         guard parts.count == 2 else { return nil }
 
-        var comps = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = timezone
+
+        // "Today" as seen from the city's timezone
+        var comps = cal.dateComponents([.year, .month, .day], from: Date())
         comps.hour = parts[0]
         comps.minute = parts[1]
         comps.second = 0
-        return Calendar.current.date(from: comps)
+        return cal.date(from: comps)
     }
 
     func updateNextPrayer() {
@@ -123,8 +141,7 @@ class PrayerTimesManager: ObservableObject {
 
     func timeLeftUntilNextPrayer() -> TimeInterval {
         guard let next = nextPrayer else { return 0 }
-        let diff = next.time.timeIntervalSinceNow
-        return max(0, diff)
+        return max(0, next.time.timeIntervalSinceNow)
     }
 
     func countdownString() -> String {
